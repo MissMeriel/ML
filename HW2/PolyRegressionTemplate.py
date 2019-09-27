@@ -32,10 +32,20 @@ def load_data_set(filename):
 def normal_equation(x, y):
     # your code
     x_t = np.transpose(x)
-    inv = np.linalg.inv(np.dot(x_t, x))
+    print("x_t: "+str(x_t))
+    print("x_t.shape: "+str(x_t.shape))
+    print("x.shape: " + str(x.shape))
+    #print("" + str())
+    xtx = np.dot(x_t, x)
+    # print("xtx: " + str(xtx))
+    print("xtx.shape: "+str(xtx.shape))
+    xtx = np.array(xtx)
+    print("xtx.shape type: "+str(type(xtx.shape)))
+    if(xtx.shape == tuple(1)):
+        xtx.reshape(1,1)
+    inv = np.linalg.inv(xtx)
     x_ty = np.dot(x_t, y)
     theta = np.dot(inv, x_ty)
-    #print("theta:" + str(theta))
     return theta
 
 # Step 2: 
@@ -50,10 +60,8 @@ def increase_poly_order(x, degree):
     i = 0
     print("x"+str(x))
     print("degree:" + str(degree))
-    #for x_member in x:
     for d in range(1, degree+1):
-        result[d] = pow(x,d)
-        # i += 1
+        result[d] = pow(x, d)
     if(test):
         print("result:"+str(result))
     return result
@@ -108,14 +116,12 @@ def predict(x, theta):
     y_predict = np.dot(x, theta)
     return y_predict
 
-
 # Given a list of thetas one per (s)GD epoch
 # this creates a plot of epoch vs prediction loss (one about train, and another about test)
 # this figure checks GD optimization traits of the best theta 
 def plot_epoch_losses(x_train, x_test, y_train, y_test, best_thetas, title):
     # your code
     print("")
-
 
 # Given a list of degrees.
 # For each degree in the list, train a polynomial regression.
@@ -139,29 +145,43 @@ def get_loss_per_poly_order(x, y, degrees):
     validation_losses = np.zeros(len(degrees))
     deg_count = 0
     for deg in degrees:
+        # calculate training losses
         x_train_degreed = np.ones((len(x_train), deg+1))
         for i in range(0,len(x_train)):
             x_degreed = increase_poly_order(x_train[i], deg)
             x_train_degreed[i] = x_degreed
         print("x_train_degreed.shape: "+str(x_train_degreed.shape))
         theta, thetas = solve_regression(x_train_degreed, y_train, 'N')
-        # add leading 1 to x vector
-        temp = np.ones((len(x), len(theta)))
-        print("x.shape:"+str(x.shape))
-        print(deg)
-        temp = (1/n) * ((x_train_degreed * theta) - y_train)**2
-        print("temp: "+str(temp))
-        training_losses[deg_count] = np.sum(temp)
-        print(sum)
+        y_predict = np.dot(x_train_degreed, theta)
+        print("y_train.shape: "+str(y_train.shape))
+        print("y_predict.shape: "+str(y_predict.shape))
+        training_losses[deg_count] = get_loss(y_train, y_predict)
+        # calculate validation losses
+        x_val_degreed = np.ones((len(x_val), deg+1))
+        for i in range(0,len(x_val)):
+            x_degreed = increase_poly_order(x_val[i], deg)
+            x_val_degreed[i] = x_degreed
+        y_predict = np.dot(x_val_degreed, theta)
+        validation_losses[deg_count] = get_loss(y_val, y_predict)
         deg_count += 1
     print("training losses:"+str(training_losses))
-    exit()
+    print("validation_losses:" + str(validation_losses))
     return training_losses, validation_losses
 
 # Give the parameter theta, best-fit degree , plot the polynomial curve
 def best_fit_plot(theta, degree):
     # your code
-    print("best fit plot")
+    x_best = np.zeros(1000)
+    y_best = np.zeros(1000)
+    for i in range(1000):
+        x_best[i] = i
+        y_best[i] = np.dot(increase_poly_order(i, degree), theta)
+    plt.plot(x_best, y_best, label="best fit plot; degree "+str(degree))
+    plt.yscale("log")
+    plt.legend(loc='best')
+    plt.title("best fit plot")
+    plt.show()
+    #print("best fit plot")
 
 def select_hyperparameter(degrees, x_train, x_test, y_train, y_test):
     # Part 1: hyperparameter tuning:  
@@ -180,9 +200,10 @@ def select_hyperparameter(degrees, x_train, x_test, y_train, y_test):
     # Once the best hyperparameter has been chosen 
     # Train the model using that hyperparameter with all samples in the training 
     # Then use the test data to estimate how well this model generalizes.
-    best_degree = 0 # fill in using best degree from part 2
-    x_train = increase_poly_order(x_train, best_degree) 
-    best_theta, best_thetas = solve_regression(x_train, y_train, method)
+    d = np.where(validation_losses ==  min(validation_losses))
+
+    best_degree = degrees[int(d[0])] # fill in using best degree from part 2
+    best_theta, best_thetas = solve_regression(x_train, y_train, 'N')
     best_fit_plot(best_theta, degree)
     print(best_theta)
     test_loss = get_loss(y_test, predict(x_test, best_theta))
