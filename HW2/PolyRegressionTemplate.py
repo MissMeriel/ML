@@ -35,15 +35,18 @@ def normal_equation(x, y):
     print("x_t: "+str(x_t))
     print("x_t.shape: "+str(x_t.shape))
     print("x.shape: " + str(x.shape))
-    #print("" + str())
     xtx = np.dot(x_t, x)
     # print("xtx: " + str(xtx))
     print("xtx.shape: "+str(xtx.shape))
     xtx = np.array(xtx)
     print("xtx.shape type: "+str(type(xtx.shape)))
-    if(xtx.shape == tuple(1)):
+    inv = []
+    try:
         xtx.reshape(1,1)
-    inv = np.linalg.inv(xtx)
+        inv = [(1/xtx)]
+    except ValueError:
+        print("not a 1x1 matrix")
+        inv = np.linalg.inv(xtx)
     x_ty = np.dot(x_t, y)
     theta = np.dot(inv, x_ty)
     return theta
@@ -69,12 +72,18 @@ def increase_poly_order(x, degree):
 # split the data into train and test examples by the train_proportion
 # i.e. if train_proportion = 0.8 then 80% of the examples are training and 20%
 # are testing
+# Note: don't need to randomize the split bc data is randomized already
 def train_test_split(x, y, train_proportion):
     index = int(len(x) * train_proportion)
+    print(index)
     x_train = x[:index]
     x_test = x[index:]
     y_train = y[:index]
     y_test = y[index:]
+    plt.scatter(x_train, y_train)
+    plt.show()
+    plt.scatter(x_test, y_test)
+    plt.show()
     return x_train, x_test, y_train, y_test
 
 # Find theta using the gradient descent/normal equation
@@ -137,8 +146,6 @@ def plot_epoch_losses(x_train, x_test, y_train, y_test, best_thetas, title):
 # validation_losses: a list of losses on the validation dataset
 def get_loss_per_poly_order(x, y, degrees):
     # your code
-    print("get_loss_per_poly_order")
-    print(x.shape)
     n = x.shape[0]
     x_train, x_val, y_train, y_val = train_test_split(x, y, 0.75)
     training_losses = np.zeros(len(degrees))
@@ -156,6 +163,7 @@ def get_loss_per_poly_order(x, y, degrees):
         print("y_train.shape: "+str(y_train.shape))
         print("y_predict.shape: "+str(y_predict.shape))
         training_losses[deg_count] = get_loss(y_train, y_predict)
+
         # calculate validation losses
         x_val_degreed = np.ones((len(x_val), deg+1))
         for i in range(0,len(x_val)):
@@ -169,18 +177,28 @@ def get_loss_per_poly_order(x, y, degrees):
     return training_losses, validation_losses
 
 # Give the parameter theta, best-fit degree , plot the polynomial curve
-def best_fit_plot(theta, degree):
+def best_fit_plot(theta, degree, x, y, x_orig, y_orig):
     # your code
-    x_best = np.zeros(1000)
-    y_best = np.zeros(1000)
-    for i in range(1000):
-        x_best[i] = i
-        y_best[i] = np.dot(increase_poly_order(i, degree), theta)
+    x_min = np.min(x_orig)
+    x_max = np.max(x_orig)
+    range_arr = np.linspace(x_min, x_max, 1000)
+    x_best = np.zeros(len(range_arr))
+    y_best = np.zeros(len(range_arr))
+    i = 0
+    for x_index in range_arr:
+        x_best[i] = x_index
+        print("i:"+str(x_index)+", degree:"+str(degree))
+        x_i_degreed = increase_poly_order(x_index, degree)
+        print("theta "+str(theta))
+        y_best[i] = np.dot(x_i_degreed, theta)
+        i += 1
+    plt.scatter(x_orig, y_orig)
+    print("x_best: "+str(x_best))
     plt.plot(x_best, y_best, label="best fit plot; degree "+str(degree))
-    plt.yscale("log")
     plt.legend(loc='best')
     plt.title("best fit plot")
     plt.show()
+    #print("")
     #print("best fit plot")
 
 def select_hyperparameter(degrees, x_train, x_test, y_train, y_test):
@@ -200,19 +218,26 @@ def select_hyperparameter(degrees, x_train, x_test, y_train, y_test):
     # Once the best hyperparameter has been chosen 
     # Train the model using that hyperparameter with all samples in the training 
     # Then use the test data to estimate how well this model generalizes.
-    d = np.where(validation_losses ==  min(validation_losses))
-
+    d = np.where(validation_losses == min(validation_losses))
     best_degree = degrees[int(d[0])] # fill in using best degree from part 2
-    best_theta, best_thetas = solve_regression(x_train, y_train, 'N')
-    best_fit_plot(best_theta, degree)
+    x_train_degreed = x_to_x_degreed(x_train, best_degree)
+    best_theta, best_thetas = solve_regression(x_train_degreed, y_train, 'N')
+    best_fit_plot(best_theta, best_degree, x_test, y_test, np.concatenate((x_train, x_test)), np.concatenate((y_train, y_test)))
     print(best_theta)
-    test_loss = get_loss(y_test, predict(x_test, best_theta))
-    train_loss = get_loss(y_train, predict(x_train, best_theta))    
+    x_test_degreed = x_to_x_degreed(x_test, best_degree)
+    test_loss = get_loss(y_test, predict(x_test_degreed, best_theta))
+    train_loss = get_loss(y_train, predict(x_train_degreed, best_theta))
 
     # Part 3: visual analysis to check GD optimization traits of the best theta 
     plot_epoch_losses(x_train, x_test, y_train, y_test, best_thetas, "best learned theta - train, test losses vs. GD epoch ")
     return best_degree, best_theta, train_loss, test_loss
 
+def x_to_x_degreed(x, degree):
+    x_degreed = np.ones((len(x), degree + 1))
+    for i in range(0, len(x)):
+        x_i_degreed = increase_poly_order(x[i], degree)
+        x_degreed[i] = x_i_degreed
+    return x_degreed
 
 # Given a list of dataset sizes [d_1, d_2, d_3 .. d_k]
 # Train a polynomial regression with first d_1, d_2, d_3, .. d_k samples
@@ -235,6 +260,8 @@ def get_loss_per_tr_num_examples(x, y, example_num, train_proportion):
 if __name__ == "__main__":
     # select the best polynomial through train-validation-test formulation 
     x, y = load_data_set("dataPoly.txt")
+    plt.scatter(x,y)
+    plt.show()
     x_train, x_test, y_train, y_test = train_test_split(x, y, 0.8)
     degrees = [i for i in range(1,10)]
     best_degree, best_theta, train_loss, test_loss = select_hyperparameter(degrees, x_train, x_test, y_train, y_test)
@@ -242,7 +269,7 @@ if __name__ == "__main__":
     # Part 4: analyze the effect of revising the size of train data: 
     # Show training error and testing error by varying the number for training samples 
     x, y = load_data_set("dataPoly.txt")
-    x = increase_poly_order(x, 8)
+    x = x_to_x_degreed(x, 8)
     example_num = [10*i for i in range(2, 11)] # python list comprehension
     training_losses, testing_losses = get_loss_per_tr_num_examples(x, y, example_num, 0.5)
     plt.plot(example_num, training_losses, label="training_loss")

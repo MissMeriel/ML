@@ -6,6 +6,23 @@ import numpy as np
 # Parse the file and return 2 numpy arrays
 def load_data_set(filename):
     # your code
+    x = []
+    y = np.array([])
+    line_count = 0
+    features = 0
+    with open(filename, "r") as f:
+        for line in f:
+            line = line.split("\t")
+            #print(line)
+            x_subarr = line[:len(line)-1]
+            x.append([])
+            x[line_count] = x_subarr
+            y = np.append(y, float(line[-1].replace("\n", "")))
+            line_count += 1
+    f.close()
+    x = np.array(x)
+    print(x.shape)
+    print(y.shape)
     return x, y
 
 # Split the data into train and test examples by the train_proportion
@@ -13,12 +30,19 @@ def load_data_set(filename):
 # are testing
 def train_test_split(x, y, train_proportion):
     # your code
+    index = int(len(x) * train_proportion)
+    x_train = x[:index]
+    x_test = x[index:]
+    y_train = y[:index]
+    y_test = y[index:]
     return x_train, x_test, y_train, y_test
 
 # Find theta using the modified normal equation
 # Note: lambdaV is used instead of lambda because lambda is a reserved word in python
 def normal_equation(x, y, lambdaV):
     # your code
+    xt = np.transpose(x)
+    beta = np.inv(np.dot(xt, x) + lambdaV*np.identity(int(x.shape[0]))) * xt * y
     return beta
 
 # Extra Credit: Find theta using gradient descent
@@ -37,14 +61,15 @@ def predict(x, theta):
     return y_predict
 
 # Find the best lambda given x_train and y_train using 4 fold cv
+# Note: k = number of bins, iteratively pick one bin as your test set
 def cross_validation(x_train, y_train, lambdas):
     valid_losses = []
     training_losses = []
     # your code
+    # split into 4
     return np.array(valid_losses), np.array(training_losses)
 
-if __name__ == "__main__":
-
+if __name__ == "__main__":  
     # step 1
     # If we don't have enough data we will use cross validation to tune hyperparameter
     # instead of a training set and a validation set.
@@ -72,9 +97,9 @@ if __name__ == "__main__":
     normal_beta = normal_equation(x_train, y_train, 0)
     best_beta = normal_equation(x_train, y_train, best_lambda)
     large_lambda_beta = normal_equation(x_train, y_train, 512)
-    normal_beta_norm = # your code get l2 norm of normal_beta
-    best_beta_norm = # your code get l2 norm of best_beta
-    large_lambda_norm = # your code get l2 norm of large_lambda_beta
+    normal_beta_norm = 0 # your code get l2 norm of normal_beta
+    best_beta_norm = 0 # your code get l2 norm of best_beta
+    large_lambda_norm = 0 # your code get l2 norm of large_lambda_beta
     print(best_lambda)
     print("L2 norm of normal beta:  " + str(normal_beta_norm))
     print("L2 norm of best beta:  " + str(best_beta_norm))
