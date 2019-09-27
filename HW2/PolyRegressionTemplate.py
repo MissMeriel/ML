@@ -132,10 +132,8 @@ def plot_epoch_losses(x_train, x_test, y_train, y_test, best_thetas, title):
 def get_loss_per_poly_order(x, y, degrees):
     # your code
     print("get_loss_per_poly_order")
-    #print("x:"+str(x))
     print(x.shape)
     n = x.shape[0]
-    d = x.shape[0]
     x_train, x_val, y_train, y_val = train_test_split(x, y, 0.75)
     training_losses = np.zeros(len(degrees))
     validation_losses = np.zeros(len(degrees))
@@ -145,23 +143,19 @@ def get_loss_per_poly_order(x, y, degrees):
         for i in range(0,len(x_train)):
             x_degreed = increase_poly_order(x_train[i], deg)
             x_train_degreed[i] = x_degreed
-            # print("x:" + str(x))
         print("x_train_degreed.shape: "+str(x_train_degreed.shape))
         theta, thetas = solve_regression(x_train_degreed, y_train, 'N')
-        # finish vvvvvv
-        # print(training_losses)
-        #print((1/n) * (np.dot(x, theta) - y)**2)
         # add leading 1 to x vector
         temp = np.ones((len(x), len(theta)))
-        for i in range(len(x)):
-            print("x[i]: "+str(x[i]))
-            print(deg)
-            temp[i][1] = x[i]
-        x = temp
-        temp = (1/n) * (np.dot(x, theta) - y)**2
-        training_losses[deg] = sum(temp)
+        print("x.shape:"+str(x.shape))
+        print(deg)
+        temp = (1/n) * ((x_train_degreed * theta) - y_train)**2
+        print("temp: "+str(temp))
+        training_losses[deg_count] = np.sum(temp)
+        print(sum)
         deg_count += 1
-    #print("training losses:"+str(training_losses))
+    print("training losses:"+str(training_losses))
+    exit()
     return training_losses, validation_losses
 
 # Give the parameter theta, best-fit degree , plot the polynomial curve
