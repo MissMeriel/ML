@@ -21,8 +21,6 @@ def load_data_set(filename):
             line_count += 1
     f.close()
     x = np.array(x)
-    print(x.shape)
-    print(y.shape)
     return x, y
 
 # Split the data into train and test examples by the train_proportion
@@ -67,6 +65,7 @@ def cross_validation(x_train, y_train, lambdas):
     training_losses = []
     # your code
     # split into 4
+
     return np.array(valid_losses), np.array(training_losses)
 
 if __name__ == "__main__":  
