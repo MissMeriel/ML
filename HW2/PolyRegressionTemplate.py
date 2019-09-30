@@ -65,8 +65,6 @@ def increase_poly_order(x, degree):
     print("degree:" + str(degree))
     for d in range(1, degree+1):
         result[d] = pow(x, d)
-    if(test):
-        print("result:"+str(result))
     return result
 
 # split the data into train and test examples by the train_proportion
