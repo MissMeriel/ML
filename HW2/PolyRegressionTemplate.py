@@ -315,6 +315,12 @@ if __name__ == "__main__":
     degrees = [i for i in range(1,10)]
     best_degree, best_theta, train_loss, test_loss = select_hyperparameter(degrees, x_train, x_test, y_train, y_test)
     print("best_theta: "+str(best_theta))
+    print("train_loss"+str(train_loss))
+    print("test_loss" + str(test_loss))
+    # print("" + str())
+    # print("" + str())
+    # print("" + str())
+    # print("" + str())
     # Part 4: analyze the effect of revising the size of train data: 
     # Show training error and testing error by varying the number for training samples 
     x, y = load_data_set("dataPoly.txt")

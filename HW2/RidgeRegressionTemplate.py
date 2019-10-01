@@ -49,12 +49,13 @@ def normal_equation(x, y, lambdaV):
     inv = 0
     xt = np.transpose(x)
     x_sq = np.dot(xt, x)
+    id_mat = np.identity(int(xt.shape[0]))
     try:
         x_sq.reshape(1, 1)
         inv = [(1 / (x_sq + lambdaV))]
     except ValueError:
         # print("not a 1x1 matrix")
-        inv = np.linalg.pinv(x_sq + lambdaV * np.identity(int(xt.shape[0])))
+        inv = np.linalg.pinv(x_sq + lambdaV * id_mat)
     beta = np.dot(np.dot(inv, xt), y)
     return beta
 
@@ -62,16 +63,16 @@ def normal_equation(x, y, lambdaV):
 def gradient_descent(x, y, lambdaV, learning_rate, num_iterations):
     # your code
     # initialize theta as [1 1]
+    v = np.size(x, 1)
     theta = np.zeros(np.size(x, 1))
     thetas = []
     for i in range(num_iterations):
-        loss = np.dot(x, theta)
-        loss = loss - y
-        regularization_term = learning_rate * -2 * lambdaV * theta
+        loss = np.dot(x, theta) - y
+        regularization_term = learning_rate * 2 * lambdaV * theta
         gradient = np.dot(x.T, loss)
         gradient /= len(x)  # normalize by number of examples
-        gradient += regularization_term
-        theta = theta - learning_rate * gradient  # + regularization_term
+        gradient -= regularization_term
+        theta = theta - learning_rate * gradient
         thetas.append(theta)
         beta = theta
     return beta
@@ -212,4 +213,4 @@ if __name__ == "__main__":
     # print("best_gradient_beta.shape: "+str(best_gradient_beta.shape))
     # print(best_gradient_beta - best_beta)
     gradient_loss = get_loss(y_test, predict(x_test, best_gradient_beta))
-    # print("gradient_loss: "+str(gradient_loss))
+    print("gradient_loss: "+str(gradient_loss))
