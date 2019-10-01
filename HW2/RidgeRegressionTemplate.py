@@ -68,10 +68,12 @@ def gradient_descent(x, y, lambdaV, learning_rate, num_iterations):
     thetas = []
     for i in range(num_iterations):
         loss = np.dot(x, theta) - y
-        regularization_term = learning_rate * 2 * lambdaV * theta
+        regularization_term = learning_rate * 2 * lambdaV * (theta **2)
+        #regularization_term = 2 * lambdaV * theta
         gradient = np.dot(x.T, loss)
         gradient /= len(x)  # normalize by number of examples
         gradient -= regularization_term
+        #gradient += regularization_term
         theta = theta - learning_rate * gradient
         thetas.append(theta)
         beta = theta
