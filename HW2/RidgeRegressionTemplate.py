@@ -89,8 +89,10 @@ def get_loss(y, y_predict):
 # Given an array of x and theta predict y
 def predict(x, theta):
     # your code
-    y_predict = np.dot(x, theta)
-    return y_predict
+    return np.dot(x, theta)
+
+def l2norm(theta):
+    return (sum(theta ** 2))** 0.5
 
 # Find the best lambda given x_train and y_train using 4 fold cv
 # Note: k = number of bins, iteratively pick one bin as your test set
@@ -144,7 +146,6 @@ if __name__ == "__main__":
     # If we don't have enough data we will use cross validation to tune hyperparameter
     # instead of a training set and a validation set.
     x, y = load_data_set("dataRidge.txt") # load data
-    print(type(x[1][1]))
     x_train, x_test, y_train, y_test = train_test_split(x, y, 0.8)
     # Create a list of lambdas to try when hyperparameter tuning
     lambdas = [2**i for i in range(-3, 20)]
@@ -168,9 +169,9 @@ if __name__ == "__main__":
     normal_beta = normal_equation(x_train, y_train, 0)
     best_beta = normal_equation(x_train, y_train, best_lambda)
     large_lambda_beta = normal_equation(x_train, y_train, 512)
-    normal_beta_norm = np.linalg.norm(normal_beta, 2) # your code get l2 norm of normal_beta
-    best_beta_norm = np.linalg.norm(best_beta, 2) # your code get l2 norm of best_beta
-    large_lambda_norm = np.linalg.norm(large_lambda_beta, 2) # your code get l2 norm of large_lambda_beta
+    normal_beta_norm = l2norm(normal_beta) # your code get l2 norm of normal_beta
+    best_beta_norm = l2norm(best_beta) # your code get l2 norm of best_beta
+    large_lambda_norm = l2norm(large_lambda_beta) # your code get l2 norm of large_lambda_beta
     print("best lambda: "+str(best_lambda))
     print("L2 norm of normal beta:  " + str(normal_beta_norm))
     print("L2 norm of best beta:  " + str(best_beta_norm))
@@ -207,7 +208,7 @@ if __name__ == "__main__":
     # to prove that it works
     best_gradient_beta = gradient_descent(x_train, y_train, best_lambda, 0.005, 2000)
     print(best_gradient_beta)
-    print("best_gradient_beta.shape: "+str(best_gradient_beta.shape))
+    # print("best_gradient_beta.shape: "+str(best_gradient_beta.shape))
     # print(best_gradient_beta - best_beta)
     gradient_loss = get_loss(y_test, predict(x_test, best_gradient_beta))
-    print("gradient_loss: "+str(gradient_loss))
+    # print("gradient_loss: "+str(gradient_loss))
