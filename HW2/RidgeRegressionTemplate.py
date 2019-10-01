@@ -67,7 +67,7 @@ def gradient_descent(x, y, lambdaV, learning_rate, num_iterations):
     for i in range(num_iterations):
         loss = np.dot(x, theta)
         loss = loss - y
-        regularization_term = 2 * lambdaV * theta
+        regularization_term = learning_rate * -2 * lambdaV * theta
         gradient = np.dot(x.T, loss)
         gradient /= len(x)  # normalize by number of examples
         gradient += regularization_term
@@ -207,7 +207,8 @@ if __name__ == "__main__":
     # Step Extra Credit: Implement gradient descent, analyze and show it gives the same or very similar beta to normal_equation
     # to prove that it works
     best_gradient_beta = gradient_descent(x_train, y_train, best_lambda, 0.005, 2000)
-    print(best_gradient_beta)
+    print(best_gradient_beta[0:5])
+    print(best_beta[0:5])
     # print("best_gradient_beta.shape: "+str(best_gradient_beta.shape))
     # print(best_gradient_beta - best_beta)
     gradient_loss = get_loss(y_test, predict(x_test, best_gradient_beta))

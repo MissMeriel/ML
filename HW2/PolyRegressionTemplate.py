@@ -18,7 +18,6 @@ def load_data_set(filename):
     with open(filename, "r") as f:
         for line in f:
             line = line.split("\t")
-            print(line)
             features = len(line)
             x = np.append(x, float(line[0]))
             y = np.append(y, float(line[-1].replace("\n", "")))
@@ -52,7 +51,6 @@ def normal_equation(x, y):
 def increase_poly_order(x, degree):
     # your code
     result = np.ones(degree+1)
-    i = 0
     for d in range(1, degree+1):
         result[d] = pow(x, d)
     return result
@@ -250,7 +248,7 @@ def select_hyperparameter(degrees, x_train, x_test, y_train, y_test):
     train_loss = get_loss(y_train, predict(x_train_degreed, best_theta))
 
     # Part 3: visual analysis to check GD optimization traits of the best theta 
-    print(best_degree)
+    # print(best_degree)
     x_train_p = np.ones((len(x_train), best_degree+1))
     for i in range(0, len(x_train)):
         x_train_p[i] = increase_poly_order(x_train[i], best_degree)
@@ -289,7 +287,6 @@ def get_loss_per_tr_num_examples(x, y, example_num, train_proportion):
     for i in example_num:
         x_train, x_test, y_train, y_test = train_test_split(x[:i], y[:i], 0.5)
         theta = normal_equation(x_train, y_train)
-
         training_losses.append(get_loss(y_train, predict(x_train, theta)))
         testing_losses.append(get_loss(y_test, predict(x_test, theta)))
     return training_losses, testing_losses
@@ -317,7 +314,7 @@ if __name__ == "__main__":
     x_train, x_test, y_train, y_test = train_test_split(x, y, 0.8)
     degrees = [i for i in range(1,10)]
     best_degree, best_theta, train_loss, test_loss = select_hyperparameter(degrees, x_train, x_test, y_train, y_test)
- 
+    print("best_theta: "+str(best_theta))
     # Part 4: analyze the effect of revising the size of train data: 
     # Show training error and testing error by varying the number for training samples 
     x, y = load_data_set("dataPoly.txt")
