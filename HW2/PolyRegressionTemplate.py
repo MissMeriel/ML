@@ -322,7 +322,7 @@ if __name__ == "__main__":
     # Show training error and testing error by varying the number for training samples 
     x, y = load_data_set("dataPoly.txt")
     x = x_to_x_degreed(x, 8)
-    example_num = [10*i for i in range(2, 11)] # python list comprehension
+    example_num = [10*i for i in range(2, 21)] # python list comprehension
     training_losses, testing_losses = get_loss_per_tr_num_examples(x, y, example_num, 0.5)
     plt.plot(example_num, training_losses, label="training_loss")
     plt.plot(example_num, testing_losses, label="testing_losses")

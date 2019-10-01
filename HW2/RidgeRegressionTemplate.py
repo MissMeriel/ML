@@ -66,7 +66,7 @@ def gradient_descent(x, y, lambdaV, learning_rate, num_iterations):
     thetas = []
     for i in range(num_iterations):
         loss = np.dot(x, theta)
-        loss = loss -  y
+        loss = loss - y
         regularization_term = 2 * lambdaV * theta
         gradient = np.dot(x.T, loss)
         gradient /= len(x)  # normalize by number of examples
@@ -189,7 +189,7 @@ if __name__ == "__main__":
     plt.legend(loc='best')
     plt.xscale("log")
     plt.yscale("log")
-    plt.title("lambda vs training and validation loss and training loss without validation")
+    plt.title("lambda vs training loss without validation")
     plt.show()
 
     # plot to compare with validation versus without
@@ -200,7 +200,7 @@ if __name__ == "__main__":
     plt.legend(loc='best')
     plt.xscale("log")
     plt.yscale("log")
-    plt.title("lambda vs training loss without validation")
+    plt.title("lambda vs training and validation loss and training loss without validation")
     plt.show()
 
     # Step Extra Credit: Implement gradient descent, analyze and show it gives the same or very similar beta to normal_equation
