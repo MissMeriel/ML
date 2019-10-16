@@ -30,6 +30,38 @@ def read_file(file):
 def fold(x, y, i, nfolds):
     # your code
     return x_train, y_train, x_test, y_test
+# Find the best lambda given x_train and y_train using 4 fold cv
+# Note: k = number of bins, iteratively pick one bin as your test set
+# def cross_validation(x_train, y_train, lambdas):
+#     valid_losses = np.zeros(len(lambdas))
+#     training_losses = np.zeros(len(lambdas))
+#     # your code
+#     # split into 4
+#     split_x = np.array(np.split(x_train, 4))
+#     split_y = np.array(np.split(y_train, 4))
+#     lambda_count = 0
+#     for l in lambdas:
+#         loocv_tr_loss = np.ones(4)
+#         loocv_val_loss = np.ones(4)
+#         for i in range(4):
+#             # train on one of the four bins
+#             x_val = split_x[i]
+#             y_val = split_y[i]
+#             x_tr = np.concatenate(np.delete(np.copy(split_x), i, 0))
+#             y_tr = np.concatenate(np.delete(np.copy(split_y), i, 0))
+#             beta = normal_equation(x_tr, y_tr, l)
+#             # get training loss
+#             y_predict = predict(x_tr, beta)
+#             #loocv_tr_loss += get_loss(y_tr, y_predict) / 4.0
+#             loocv_tr_loss[i] = get_loss(y_tr, y_predict)
+#             # get validation loss
+#             y_predict = predict(x_val, beta)
+#             #loocv_val_loss += get_loss(y_val, y_predict) / 4.0
+#             loocv_val_loss[i] = get_loss(y_val, y_predict)
+#         training_losses[lambda_count] = np.mean(loocv_tr_loss)
+#         valid_losses[lambda_count] = np.mean(loocv_val_loss)
+#         lambda_count += 1
+#     return np.array(valid_losses), np.array(training_losses)
 
 # 3. Classify each testing points based on the training points
 # Input
