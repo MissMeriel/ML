@@ -3,7 +3,7 @@
 import numpy as np
 np.random.seed(37)
 import random
-
+import csv
 from sklearn.svm import SVC
 # Att: You're not allowed to use modules other than SVC in sklearn, i.e., model_selection.
 
@@ -27,8 +27,12 @@ categorical_cols = ['workclass', 'education', 'marital-status', 'occupation', 'r
 def load_data(csv_file_path):
     # your code here
     file = open(csv_file_path)
-    data = np.loadtxt(file, skiprows=1)
-    print(data)
+    csv_reader = csv.reader(file, delimiter=',')
+    x = []
+    y = []
+    for row in csv_reader:
+        x.append(row[1:len(row)-1])
+        y.append(row[-1])
     return x, y
 
 # 2. Select best hyperparameter with cross validation and train model.
@@ -37,6 +41,7 @@ def train_and_select_model(training_csv):
     # load data and preprocess from filename training_csv
     x_train, y_train = load_data(training_csv)
     # hard code hyperparameter configurations, an example:
+    # TODO: Customize param set
     param_set = [
                  {'kernel': 'rbf', 'C': 1, 'degree': 1},
                  {'kernel': 'rbf', 'C': 1, 'degree': 3},
@@ -45,7 +50,16 @@ def train_and_select_model(training_csv):
     ]
     # your code here
     # iterate over all hyperparameter configurations
-    # perform 3 FOLD cross validation
+    # TODO: figure out SVC for best_model and best_score
+    # TODO: 3-fold cross validation
+    best_score = 0
+    for param in param_set:
+        nfolds = 3
+        model = SVC(C=param['C'], kernel=param['kernel'], degree=param['degree'])
+        model_fit = model.fit(x_train, y_train)
+        # perform 3 FOLD cross validation
+        #for i in range(nfolds):
+            #if new_score > best_score:
     # print cv scores for every hyperparameter and include in pdf report
     # select best hyperparameter from cv scores, retrain model 
     return best_model, best_score
