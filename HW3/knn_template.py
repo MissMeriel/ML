@@ -6,10 +6,11 @@ np.random.seed(37)
 # for plot
 import matplotlib.pyplot as plt
 #more imports
+import math
+import random
+from scipy import stats
 from sklearn.neighbors import KNeighborsClassifier
 ## the only purpose of the above import is in case that you want to compare your knn with sklearn knn
-
-
 
 # Load file into np arrays
 # x is the features
@@ -27,41 +28,50 @@ def read_file(file):
 # y is an np array for labels
 # i is an int indicating current fold
 # nfolds is the total number of cross validation folds
+# Note: k = number of bins, iteratively pick one bin as your test set
 def fold(x, y, i, nfolds):
     # your code
+    # old code
+    #     valid_losses = np.zeros(len(lambdas))
+    #     training_losses = np.zeros(len(lambdas))
+    #     # your code
+    #     # split into i
+    #     split_x = np.array(np.split(x_train, 4))
+    #     split_y = np.array(np.split(y_train, 4))
+    #     lambda_count = 0
+    #     for l in lambdas:
+    #         loocv_tr_loss = np.ones(4)
+    #         loocv_val_loss = np.ones(4)
+    #         for i in range(4):
+    #             # train on one of the four bins
+    #             x_val = split_x[i]
+    #             y_val = split_y[i]
+    #             x_tr = np.concatenate(np.delete(np.copy(split_x), i, 0))
+    #             y_tr = np.concatenate(np.delete(np.copy(split_y), i, 0))
+    #             beta = normal_equation(x_tr, y_tr, l)
+    #             # get training loss
+    #             y_predict = predict(x_tr, beta)
+    #             #loocv_tr_loss += get_loss(y_tr, y_predict) / 4.0
+    #             loocv_tr_loss[i] = get_loss(y_tr, y_predict)
+    #             # get validation loss
+    #             y_predict = predict(x_val, beta)
+    #             #loocv_val_loss += get_loss(y_val, y_predict) / 4.0
+    #             loocv_val_loss[i] = get_loss(y_val, y_predict)
+    #         training_losses[lambda_count] = np.mean(loocv_tr_loss)
+    #         valid_losses[lambda_count] = np.mean(loocv_val_loss)
+    #         lambda_count += 1
+    #     return np.array(valid_losses), np.array(training_losses)
+    split_x = np.array(np.split(x, nfolds))
+    split_y = np.array(np.split(y, nfolds))
+    # TODO: where is i coming from
+    #rand_index = i
+    rand_index = random.randint(0, nfolds)
+    x_test = split_x[rand_index]
+    y_test = split_y[rand_index]
+    x_train = np.concatenate(np.delete(np.copy(split_x), rand_index, 0))
+    y_train = np.concatenate(np.delete(np.copy(split_y), rand_index, 0))
     return x_train, y_train, x_test, y_test
-# Find the best lambda given x_train and y_train using 4 fold cv
-# Note: k = number of bins, iteratively pick one bin as your test set
-# def cross_validation(x_train, y_train, lambdas):
-#     valid_losses = np.zeros(len(lambdas))
-#     training_losses = np.zeros(len(lambdas))
-#     # your code
-#     # split into 4
-#     split_x = np.array(np.split(x_train, 4))
-#     split_y = np.array(np.split(y_train, 4))
-#     lambda_count = 0
-#     for l in lambdas:
-#         loocv_tr_loss = np.ones(4)
-#         loocv_val_loss = np.ones(4)
-#         for i in range(4):
-#             # train on one of the four bins
-#             x_val = split_x[i]
-#             y_val = split_y[i]
-#             x_tr = np.concatenate(np.delete(np.copy(split_x), i, 0))
-#             y_tr = np.concatenate(np.delete(np.copy(split_y), i, 0))
-#             beta = normal_equation(x_tr, y_tr, l)
-#             # get training loss
-#             y_predict = predict(x_tr, beta)
-#             #loocv_tr_loss += get_loss(y_tr, y_predict) / 4.0
-#             loocv_tr_loss[i] = get_loss(y_tr, y_predict)
-#             # get validation loss
-#             y_predict = predict(x_val, beta)
-#             #loocv_val_loss += get_loss(y_val, y_predict) / 4.0
-#             loocv_val_loss[i] = get_loss(y_val, y_predict)
-#         training_losses[lambda_count] = np.mean(loocv_tr_loss)
-#         valid_losses[lambda_count] = np.mean(loocv_val_loss)
-#         lambda_count += 1
-#     return np.array(valid_losses), np.array(training_losses)
+
 
 # 3. Classify each testing points based on the training points
 # Input
@@ -73,14 +83,40 @@ def fold(x, y, i, nfolds):
 def classify(x_train, y_train, x_test, k):
     # your code
     # Euclidean distance as the measurement of distance in KNN
+    y_predict = np.zeros(len(y_train))
+    distances = np.zeros(len(y_train))
+    delta_sq = pow(1, 2)
+    for i in range(x_test.shape[0]):
+        dist = 0
+        for j in range(x_test.shape[1]):
+            # TODO: cleaner way to do this than double loop
+            dist += math.sqrt(delta_sq * pow(x_train[i][j] - x_test[i][j], 2))
+        distances[i] = dist
+        # get indices of k smallest distances
+        min_dist_indices = distances.argsort()[:k]
+        # get predominant classification among k nearest neighbors
+        # break ties with 1+(1/2*k)
+        classes = np.zeros(len(min_dist_indices))
+        for index in min_dist_indices:
+            classes[np.where(min_dist_indices == index)] = y_train[index]
+            classes[np.where(min_dist_indices == index)] = y_train[index]
+        mode = stats.mode(classes)
+        y_predict[i] = mode.mode
     return y_predict
 
-# 4. Calculate accuracy by comaring with true labels
+# 4. Calculate accuracy by comparing with true labels
 # Input
 # y_predict is a numpy array of 1s and 0s for the class prediction
 # y is a numpy array of 1s and 0s for the true class label
+# TODO: Fix for correctness: bigger acc --> more accurate
 def calc_accuracy(y_predict, y):
     # your code
+    acc = 0
+    # print("y.shape="+str(y.shape))
+    for i in range(len(y_predict)):
+        # print("y["+str(i)+"]="+str(y[i]))
+        # print("y_predict[" + str(i) + "]=" + str(y_predict[i]))
+        acc += abs(y[i] - y_predict[i])
     return acc
 
 # 5. Draw the bar plot of k vs. accuracy
@@ -89,6 +125,11 @@ def calc_accuracy(y_predict, y):
 def barplot(klist, accuracy_list):
     # your code
     # use matplot lib to generate bar plot with K on x axis and cross validation accuracy on y-axis
+    plt.bar(klist, accuracy_list, align='center', alpha=0.5)
+    plt.xlabel('K values')
+    plt.ylabel('cross validation accuracy')
+    plt.title('bar plot of cross validation accuracy by K')
+    plt.show()
     return
 
 # 1. Find the best K
@@ -100,9 +141,10 @@ def findBestK(x, y, klist, nfolds):
         # your code here
         # to get nfolds cross validation accuracy for k neighbors
         # implement fold(x, y, i, nfolds),classify(x_train, y_train, x_test, k) and calc_accuracy(y_predict, y)
-        
-        
-        accuracy = # CROSS VALIDATION accuracy for k neighbors
+        i = 1 % k
+        x_train, y_train, x_test, y_test = fold(x, y, i, nfolds)
+        y_predict = classify(x_train, y_train, x_test, k)
+        accuracy = calc_accuracy(y_predict, y)  # CROSS VALIDATION accuracy for k neighbors
         if accuracy > best_acc:
             kbest = k
             best_acc = accuracy
