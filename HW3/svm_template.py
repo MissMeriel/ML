@@ -26,7 +26,10 @@ categorical_cols = ['workclass', 'education', 'marital-status', 'occupation', 'r
 # for the continuous variables.
 def load_data(csv_file_path):
     # your code here
-    return x, y   
+    file = open(csv_file_path)
+    data = np.loadtxt(file, skiprows=1)
+    print(data)
+    return x, y
 
 # 2. Select best hyperparameter with cross validation and train model.
 # Attention: Write your own hyper-parameter candidates.
@@ -71,7 +74,7 @@ if __name__ == '__main__':
     # hardcode hyperparameter configurations as part of train_and_select_model(training_csv)
     trained_model, cv_score = train_and_select_model(training_csv)
 
-    print "The best model was scored %.2f" % cv_score
+    print("The best model was scored %.2f" % cv_score)
     # use trained SVC model to generate predictions
     predictions = predict(testing_csv, trained_model)
     # Don't archive the files or change the file names for the automated grading.

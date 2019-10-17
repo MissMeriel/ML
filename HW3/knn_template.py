@@ -31,45 +31,12 @@ def read_file(file):
 # Note: k = number of bins, iteratively pick one bin as your test set
 def fold(x, y, i, nfolds):
     # your code
-    # old code
-    #     valid_losses = np.zeros(len(lambdas))
-    #     training_losses = np.zeros(len(lambdas))
-    #     # your code
-    #     # split into i
-    #     split_x = np.array(np.split(x_train, 4))
-    #     split_y = np.array(np.split(y_train, 4))
-    #     lambda_count = 0
-    #     for l in lambdas:
-    #         loocv_tr_loss = np.ones(4)
-    #         loocv_val_loss = np.ones(4)
-    #         for i in range(4):
-    #             # train on one of the four bins
-    #             x_val = split_x[i]
-    #             y_val = split_y[i]
-    #             x_tr = np.concatenate(np.delete(np.copy(split_x), i, 0))
-    #             y_tr = np.concatenate(np.delete(np.copy(split_y), i, 0))
-    #             beta = normal_equation(x_tr, y_tr, l)
-    #             # get training loss
-    #             y_predict = predict(x_tr, beta)
-    #             #loocv_tr_loss += get_loss(y_tr, y_predict) / 4.0
-    #             loocv_tr_loss[i] = get_loss(y_tr, y_predict)
-    #             # get validation loss
-    #             y_predict = predict(x_val, beta)
-    #             #loocv_val_loss += get_loss(y_val, y_predict) / 4.0
-    #             loocv_val_loss[i] = get_loss(y_val, y_predict)
-    #         training_losses[lambda_count] = np.mean(loocv_tr_loss)
-    #         valid_losses[lambda_count] = np.mean(loocv_val_loss)
-    #         lambda_count += 1
-    #     return np.array(valid_losses), np.array(training_losses)
     split_x = np.array(np.split(x, nfolds))
     split_y = np.array(np.split(y, nfolds))
-    # TODO: where is i coming from
-    #rand_index = i
-    rand_index = random.randint(0, nfolds)
-    x_test = split_x[rand_index]
-    y_test = split_y[rand_index]
-    x_train = np.concatenate(np.delete(np.copy(split_x), rand_index, 0))
-    y_train = np.concatenate(np.delete(np.copy(split_y), rand_index, 0))
+    x_test = split_x[i]
+    y_test = split_y[i]
+    x_train = np.concatenate(np.delete(np.copy(split_x), i, 0))
+    y_train = np.concatenate(np.delete(np.copy(split_y), i, 0))
     return x_train, y_train, x_test, y_test
 
 
@@ -129,7 +96,7 @@ def barplot(klist, accuracy_list):
     plt.bar(klist, accuracy_list, align='center', alpha=0.5)
     plt.xlabel('K values')
     plt.ylabel('cross validation accuracy')
-    plt.title('bar plot of cross validation accuracy by K')
+    plt.title('Cross validation accuracy by K')
     plt.show()
     return
 
@@ -142,14 +109,12 @@ def findBestK(x, y, klist, nfolds):
         # your code here
         # to get nfolds cross validation accuracy for k neighbors
         # implement fold(x, y, i, nfolds),classify(x_train, y_train, x_test, k) and calc_accuracy(y_predict, y)
-        i = 1 % k
-        x_train, y_train, x_test, y_test = fold(x, y, i, nfolds)
-        y_predict = classify(x_train, y_train, x_test, k)
-        # print("x_test.shape=" + str(x_test.shape))
-        # print("y_test.shape=" + str(y_test.shape))
-        # print("y_predict.shape=" + str(y_predict.shape))
-        # print()
-        accuracy = calc_accuracy(y_predict, y_test)  # CROSS VALIDATION accuracy for k neighbors
+        accuracy = 0
+        for i in range(nfolds):
+            x_train, y_train, x_test, y_test = fold(x, y, i, nfolds)
+            y_predict = classify(x_train, y_train, x_test, k)
+            accuracy += calc_accuracy(y_predict, y_test)  # CROSS VALIDATION accuracy for k neighbors
+        accuracy = accuracy / float(nfolds)
         if accuracy > best_acc:
             kbest = k
             best_acc = accuracy
