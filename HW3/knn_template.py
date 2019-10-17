@@ -83,8 +83,8 @@ def fold(x, y, i, nfolds):
 def classify(x_train, y_train, x_test, k):
     # your code
     # Euclidean distance as the measurement of distance in KNN
-    y_predict = np.zeros(len(y_train))
-    distances = np.zeros(len(y_train))
+    y_predict = np.zeros(len(x_test))
+    distances = np.zeros(len(x_test))
     delta_sq = pow(1, 2)
     for i in range(x_test.shape[0]):
         dist = 0
@@ -113,6 +113,7 @@ def calc_accuracy(y_predict, y):
     # your code
     acc = 0
     # print("y.shape="+str(y.shape))
+    # print("y_predict.shape=" + str(y_predict.shape))
     for i in range(len(y_predict)):
         # print("y["+str(i)+"]="+str(y[i]))
         # print("y_predict[" + str(i) + "]=" + str(y_predict[i]))
@@ -144,7 +145,11 @@ def findBestK(x, y, klist, nfolds):
         i = 1 % k
         x_train, y_train, x_test, y_test = fold(x, y, i, nfolds)
         y_predict = classify(x_train, y_train, x_test, k)
-        accuracy = calc_accuracy(y_predict, y)  # CROSS VALIDATION accuracy for k neighbors
+        # print("x_test.shape=" + str(x_test.shape))
+        # print("y_test.shape=" + str(y_test.shape))
+        # print("y_predict.shape=" + str(y_predict.shape))
+        # print()
+        accuracy = calc_accuracy(y_predict, y_test)  # CROSS VALIDATION accuracy for k neighbors
         if accuracy > best_acc:
             kbest = k
             best_acc = accuracy
