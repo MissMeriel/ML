@@ -14,11 +14,15 @@ col_names_x = ['age', 'workclass', 'fnlwgt', 'education', 'education-num', 'mari
              'occupation', 'relationship', 'race', 'sex', 'capital-gain', 'capital-loss',
              'hours-per-week', 'native-country']
 col_names_y = ['label']
+#<=50k == 0; >50k == 1
+y_dict = {' <=50K':0, ' >50K':1}
 
 numerical_cols = ['age', 'fnlwgt', 'education-num', 'capital-gain', 'capital-loss',
                   'hours-per-week']
 categorical_cols = ['workclass', 'education', 'marital-status', 'occupation', 'relationship',
                     'race', 'sex', 'native-country']
+#x_dict = dict({col_names_x[i]: {}} for i in range(len(col_names_x)))
+x_dict = dict.fromkeys(col_names_x)
 
 # 1. Data loading from file and pre-processing.
 # Hint: Feel free to use some existing libraries for easier data pre-processing. 
@@ -31,15 +35,65 @@ def load_data(csv_file_path):
     x = []
     y = []
     for row in csv_reader:
-        x.append(row[1:len(row)-1])
+        x.append(row[0:len(row)-1])
         y.append(row[-1])
-    return x, y
+    for key in x_dict.keys():
+        x_dict[key] = {}
+    x = preprocess_x(np.array(x))
+    y = preprocess_y(y)
+    return np.array(x), np.array(y)
+
+def preprocess_x(x):
+    id_count_x = np.zeros(len(col_names_x))
+    for i in range(x.shape[0]):
+        if(i < 5):
+            print(x[i])
+        for j in range(x.shape[1]):
+            try:
+                if (i < 5):
+                    print(col_names_x[j]+":"+str(x[i][j]))
+                    print(x_dict[col_names_x[j]])
+                    print(x_dict)
+                x[i][j] = x_dict[col_names_x[j]][x[i][j]]
+            except KeyError:
+                id_count_x[j] += 1
+                x_dict[col_names_x[j]][x[i][j]] = id_count_x[j]
+                x[i][j] = id_count_x[j]
+            except TypeError: # catch NoneType dict
+                id_count_x[j] += 1
+                x_dict[col_names_x[j]] = {x[i][j]: id_count_x[j]}
+                x[i][j] = id_count_x[j]
+    return x
+
+def preprocess_y(y):
+    for i in range(len(y)):
+        y[i] = y_dict[y[i]]
+    return y
+
+def fold(x, y, i, nfolds):
+    # your code
+    split_x = np.array_split(x, nfolds)
+    split_y = np.array(np.array_split(y, nfolds))
+    x_test = split_x[i]
+    y_test = split_y[i]
+    x_train = np.concatenate(np.delete(np.copy(split_x), i, 0))
+    y_train = np.concatenate(np.delete(np.copy(split_y), i, 0))
+    return x_train, y_train, x_test, y_test
+
+def calc_accuracy(y_predict, y):
+    # your code
+    acc = 0
+    for i in range(len(y_predict)):
+        diff = y[i] - y_predict[i]
+        acc += 1 - abs(diff)
+    # print("acc: "+str(acc))
+    return acc / float(len(y_predict))
 
 # 2. Select best hyperparameter with cross validation and train model.
 # Attention: Write your own hyper-parameter candidates.
 def train_and_select_model(training_csv):
     # load data and preprocess from filename training_csv
-    x_train, y_train = load_data(training_csv)
+    x, y = load_data(training_csv)
     # hard code hyperparameter configurations, an example:
     # TODO: Customize param set
     param_set = [
@@ -48,19 +102,36 @@ def train_and_select_model(training_csv):
                  {'kernel': 'rbf', 'C': 1, 'degree': 5},
                  {'kernel': 'rbf', 'C': 1, 'degree': 7},
     ]
+    for c in range(2,5):
+        for deg in range(5):
+            for kern in ['linear', 'poly', 'rbf', 'sigmoid']:
+                param_set.append({'kernel':kern, 'C':c, 'degree':deg})
     # your code here
     # iterate over all hyperparameter configurations
     # TODO: figure out SVC for best_model and best_score
     # TODO: 3-fold cross validation
     best_score = 0
+    best_model = 0
     for param in param_set:
         nfolds = 3
         model = SVC(C=param['C'], kernel=param['kernel'], degree=param['degree'])
-        model_fit = model.fit(x_train, y_train)
         # perform 3 FOLD cross validation
-        #for i in range(nfolds):
-            #if new_score > best_score:
-    # print cv scores for every hyperparameter and include in pdf report
+        new_score = 0
+        for i in range(nfolds):
+            x_train, y_train, x_test, y_test = fold(x, y, i, nfolds)
+            model.fit(x_train, y_train)
+            y_predict = model.decision_function(x_test)
+            # acc = calc_accuracy(y_predict, y_test)
+            # check against package accuracy scoring
+            mscore = model.score(x_test, y_test)
+            new_score += mscore / float(nfolds)
+            # print("method score: "+str(acc))
+            # print("model score: "+str(mscore))
+        if new_score > best_score:
+            best_score = new_score
+            best_model = model
+        # print cv scores for every hyperparameter and include in pdf report
+        print(param, new_score)
     # select best hyperparameter from cv scores, retrain model 
     return best_model, best_score
 

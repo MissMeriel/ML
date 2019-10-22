@@ -50,42 +50,45 @@ def fold(x, y, i, nfolds):
 def classify(x_train, y_train, x_test, k):
     # your code
     # Euclidean distance as the measurement of distance in KNN
-    y_predict = np.zeros(len(x_test))
-    distances = np.zeros(len(x_test))
+    y_predict = np.zeros(x_test.shape[0])
     delta_sq = pow(1, 2)
-    for i in range(x_test.shape[0]):
-        dist = 0
-        for j in range(x_test.shape[1]):
-            # TODO: cleaner way to do this than double loop
-            dist += math.sqrt(delta_sq * pow(x_train[i][j] - x_test[i][j], 2))
-        distances[i] = dist
-        # get indices of k smallest distances
+    for h in range(x_test.shape[0]):
+        distances = np.zeros(x_train.shape[0])
+        for i in range(x_train.shape[0]):
+            #print("x_train["+str(i)+"] - x_test["+str(i)+"]="+str(x_train[i] - x_test[i]))
+            sum = np.sum((x_train[i] - x_test[h]) * (x_train[i] - x_test[h]))
+            #print("np.sum(x_train["+str(i)+"] - x_test["+str(i)+"])="+str(sum))
+            dist = pow(sum, 2)
+            distances[i] = math.sqrt(dist)
+            # print(distances[i])
+            # get indices of k smallest distances
+            # print("distances.argsort(): "+str(distances.argsort()))
         min_dist_indices = distances.argsort()[:k]
         # get predominant classification among k nearest neighbors
         # break ties with 1+(1/2*k)
         classes = np.zeros(len(min_dist_indices))
+        m=0
         for index in min_dist_indices:
-            classes[np.where(min_dist_indices == index)] = y_train[index]
-            classes[np.where(min_dist_indices == index)] = y_train[index]
+            # classes[np.where(min_dist_indices == index)] = y_train[index]
+            #print("distances["+str(index)+"]: "+str(distances[index]))
+            classes[m] = y_train[index]
+            m += 1
+        # print(classes)
         mode = stats.mode(classes)
-        y_predict[i] = mode.mode
+        y_predict[h] = mode.mode[0]
     return y_predict
 
 # 4. Calculate accuracy by comparing with true labels
 # Input
 # y_predict is a numpy array of 1s and 0s for the class prediction
 # y is a numpy array of 1s and 0s for the true class label
-# TODO: Fix for correctness: bigger acc --> more accurate
 def calc_accuracy(y_predict, y):
     # your code
     acc = 0
-    # print("y.shape="+str(y.shape))
-    # print("y_predict.shape=" + str(y_predict.shape))
     for i in range(len(y_predict)):
-        # print("y["+str(i)+"]="+str(y[i]))
-        # print("y_predict[" + str(i) + "]=" + str(y_predict[i]))
-        acc += abs(y[i] - y_predict[i])
-    return acc
+        acc += 1 - abs(y[i] - y_predict[i])
+    # print("acc: "+str(acc))
+    return acc / float(len(y_predict))
 
 # 5. Draw the bar plot of k vs. accuracy
 # klist: a list of values of ks
@@ -120,6 +123,11 @@ def findBestK(x, y, klist, nfolds):
             best_acc = accuracy
         accuracy_list.append(accuracy)
         print(k, accuracy)
+        # test against sklearn
+        neigh = KNeighborsClassifier(n_neighbors=k)
+        neigh.fit(x_train, y_train)
+        acc_check = neigh.score(x_test, y_test)
+        print(k, acc_check)
     # plot cross validation error for each k : implement function barplot(klist, accuracy_list)
     barplot(klist, accuracy_list)
     return kbest
@@ -129,6 +137,8 @@ if __name__ == "__main__":
     filename = "Movie_Review_Data.txt"
     # read data
     x, y = read_file(filename)
+    x_ver = np.zeros((2, len(y)))
+    y_ver = np.zeros(len(y))
     nfolds = 4
     klist = [3, 5, 7, 9, 11, 13]
     # Implementation covers two tasks, both part of findBestK function
