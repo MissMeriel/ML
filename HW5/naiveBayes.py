@@ -149,7 +149,12 @@ def preprocess1(line):
     #line = line.replace("", "")
     return line
 
-# See lecture 17 slide 54
+
+def preprocess2(line):
+    return line
+
+
+# See lecture 17c slide 54-56
 # thetaPos == probability of a word appearing in a positive review
 def naiveBayesMulFeature_train(xtrain, ytrain):
     # get class percentages
@@ -173,12 +178,14 @@ def naiveBayesMulFeature_train(xtrain, ytrain):
     # get argmax of probabilities for collection of words in diff classes
     thetaNeg = np.zeros(len(xtrain[0]))
     for i in range(len(xtrain[0])):
-        hmap = math.log(neg_word_prob[i]/float(sum(neg_word_count))) + math.log(negratio)
+        #hmap = math.log(neg_word_prob[i]/float(sum(neg_word_count))) + math.log(negratio)
+        hmap = math.log(neg_word_prob[i]) + math.log(negratio)
         #print("probability of {} in neg review: {}".format(vocabulary[i], hmap))
         thetaNeg[i] = hmap
     thetaPos = np.zeros(len(xtrain[0]))
     for i in range(len(xtrain[0])):
-        hmap = math.log(pos_word_prob[i]/sum(pos_word_count)) + math.log(posratio)
+        #hmap = math.log(pos_word_prob[i]/sum(pos_word_count)) + math.log(posratio)
+        hmap = math.log(pos_word_prob[i]) + math.log(posratio)
         #print("probability of {} in pos review: {}".format(vocabulary[i], hmap))
         thetaPos[i] = hmap
     return thetaPos, thetaNeg
@@ -187,11 +194,25 @@ def naiveBayesMulFeature_train(xtrain, ytrain):
 def naiveBayesMulFeature_test(xtest, ytest, thetaPos, thetaNeg):
     yPredict = []
     Accuracy = 0
+    for i in range(len(ytest)):
+        y_hat_pos = sum(xtest[i] * thetaPos)
+        y_hat_neg = sum(xtest[i] * thetaNeg)
+        classification = 0
+        if(y_hat_pos > y_hat_neg):
+            yPredict.append(1)
+            classification = 1
+        else:
+            yPredict.append(0)
+        if(classification == ytest[i]):
+            Accuracy += 1
+    Accuracy = Accuracy / float(len(ytest))
     return yPredict, Accuracy
 
 
-def naiveBayesMulFeature_sk_MNBC(xtrain, ytrain, Xtest, ytest):
-    Accuracy = 0
+def naiveBayesMulFeature_sk_MNBC(xtrain, ytrain, xtest, ytest):
+    clf = MultinomialNB(alpha=5, fit_prior=True, class_prior=None)
+    clf.fit(xtrain, ytrain)
+    Accuracy = clf.score(xtest, ytest)
     return Accuracy
 
 
@@ -221,17 +242,12 @@ if __name__ == "__main__":
 
 
     thetaPos, thetaNeg = naiveBayesMulFeature_train(xtrain, ytrain)
-    print("thetaPos =", thetaPos)
-    print("thetaNeg =", thetaNeg)
+    #print("thetaPos =", thetaPos)
+    #print("thetaNeg =", thetaNeg)
     print("--------------------")
 
     yPredict, Accuracy = naiveBayesMulFeature_test(xtest, ytest, thetaPos, thetaNeg)
     print("MNBC classification accuracy =", Accuracy)
-
-    clf = MultinomialNB(alpha=5, fit_prior=True, class_prior=None)
-    clf.fit(xtrain, ytrain)
-    print(clf.get_params())
-    print(clf.score(xtrain, ytrain))
 
     Accuracy_sk = naiveBayesMulFeature_sk_MNBC(xtrain, ytrain, xtest, ytest)
     print("Sklearn MultinomialNB accuracy =", Accuracy_sk)
