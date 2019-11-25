@@ -219,12 +219,63 @@ def naiveBayesMulFeature_sk_MNBC(xtrain, ytrain, xtest, ytest):
 def naiveBayesBernFeature_train(xtrain, ytrain):
     thetaPosTrue = []
     thetaNegTrue = []
+    # turn counts into bernoulli "successes"
+    for i in range(len(xtrain)):
+        for j in range(len(xtrain[i])):
+            if(xtrain[i][j] > 0):
+                xtrain[i][j] = 1
+    # train
+    # get class percentages
+    unique, counts = np.unique(ytrain, return_counts=True)
+    negratio = counts[0] / float(len(ytrain))
+    posratio = counts[1] / float(len(ytrain))
+    # find avg probability of a word per class using laplace smoothing fxn
+    alpha = .001
+    neg_word_count = np.zeros(len(xtrain[0]))
+    pos_word_count = np.zeros(len(xtrain[0]))
+    for i in range(len(ytrain)):
+        if ytrain[i] == 0:
+            neg_word_count[:] = neg_word_count[:] + xtrain[i]
+        else:
+            pos_word_count[:] = pos_word_count[:] + xtrain[i]
+    neg_word_prob = np.zeros(len(xtrain[0]))
+    pos_word_prob = np.zeros(len(xtrain[0]))
+    for i in range(len(xtrain[0])):
+        neg_word_prob[i] = (neg_word_count[i] + alpha) / (sum(neg_word_count) + len(vocabulary) + 1)
+        pos_word_prob[i] = (pos_word_count[i] + alpha) / (sum(pos_word_count) + len(vocabulary) + 1)
+    # get argmax of probabilities for collection of words in diff classes
+    thetaNeg = np.zeros(len(xtrain[0]))
+    for i in range(len(xtrain[0])):
+        # hmap = math.log(neg_word_prob[i]/float(sum(neg_word_count))) + math.log(negratio)
+        hmap = math.log(neg_word_prob[i]) + math.log(negratio)
+        # print("probability of {} in neg review: {}".format(vocabulary[i], hmap))
+        thetaNeg[i] = hmap
+    thetaPos = np.zeros(len(xtrain[0]))
+    for i in range(len(xtrain[0])):
+        # hmap = math.log(pos_word_prob[i]/sum(pos_word_count)) + math.log(posratio)
+        hmap = math.log(pos_word_prob[i]) + math.log(posratio)
+        # print("probability of {} in pos review: {}".format(vocabulary[i], hmap))
+        thetaPos[i] = hmap
+    thetaPosTrue = thetaPos
+    thetaNegTrue = thetaNeg
     return thetaPosTrue, thetaNegTrue
 
 
 def naiveBayesBernFeature_test(xtest, ytest, thetaPosTrue, thetaNegTrue):
     yPredict = []
     Accuracy = 0
+    for i in range(len(ytest)):
+        y_hat_pos = sum(xtest[i] * thetaPosTrue)
+        y_hat_neg = sum(xtest[i] * thetaNegTrue)
+        classification = 0
+        if(y_hat_pos > y_hat_neg):
+            yPredict.append(1)
+            classification = 1
+        else:
+            yPredict.append(0)
+        if(classification == ytest[i]):
+            Accuracy += 1
+    Accuracy = Accuracy / float(len(ytest))
     return yPredict, Accuracy
 
 
@@ -242,8 +293,8 @@ if __name__ == "__main__":
 
 
     thetaPos, thetaNeg = naiveBayesMulFeature_train(xtrain, ytrain)
-    #print("thetaPos =", thetaPos)
-    #print("thetaNeg =", thetaNeg)
+    print("thetaPos =", thetaPos)
+    print("thetaNeg =", thetaNeg)
     print("--------------------")
 
     yPredict, Accuracy = naiveBayesMulFeature_test(xtest, ytest, thetaPos, thetaNeg)
