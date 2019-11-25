@@ -230,31 +230,39 @@ def naiveBayesBernFeature_train(xtrain, ytrain):
     negratio = counts[0] / float(len(ytrain))
     posratio = counts[1] / float(len(ytrain))
     # find avg probability of a word per class using laplace smoothing fxn
-    alpha = .001
     neg_word_count = np.zeros(len(xtrain[0]))
     pos_word_count = np.zeros(len(xtrain[0]))
+    # fraction of documents in which words appear
     for i in range(len(ytrain)):
         if ytrain[i] == 0:
             neg_word_count[:] = neg_word_count[:] + xtrain[i]
         else:
             pos_word_count[:] = pos_word_count[:] + xtrain[i]
+    # smoothing
     neg_word_prob = np.zeros(len(xtrain[0]))
     pos_word_prob = np.zeros(len(xtrain[0]))
+    alpha = .001
     for i in range(len(xtrain[0])):
         neg_word_prob[i] = (neg_word_count[i] + alpha) / (sum(neg_word_count) + len(vocabulary) + 1)
         pos_word_prob[i] = (pos_word_count[i] + alpha) / (sum(pos_word_count) + len(vocabulary) + 1)
     # get argmax of probabilities for collection of words in diff classes
     thetaNeg = np.zeros(len(xtrain[0]))
     for i in range(len(xtrain[0])):
-        # hmap = math.log(neg_word_prob[i]/float(sum(neg_word_count))) + math.log(negratio)
-        hmap = math.log(neg_word_prob[i]) + math.log(negratio)
-        # print("probability of {} in neg review: {}".format(vocabulary[i], hmap))
+        hmap = 0 # math.log(neg_word_prob[i]) + math.log(negratio)
+        try:
+            hmap = -math.log(neg_word_prob[i]**neg_word_count[i] * (1-neg_word_prob[i])**(1400-neg_word_count[i]))
+        except:
+            hmap = 0
+        print("probability of {} in neg review: {} (log={})".format(vocabulary[i], neg_word_count[i]/sum(neg_word_count), hmap))
         thetaNeg[i] = hmap
     thetaPos = np.zeros(len(xtrain[0]))
     for i in range(len(xtrain[0])):
-        # hmap = math.log(pos_word_prob[i]/sum(pos_word_count)) + math.log(posratio)
-        hmap = math.log(pos_word_prob[i]) + math.log(posratio)
-        # print("probability of {} in pos review: {}".format(vocabulary[i], hmap))
+        hmap = 0 # math.log(pos_word_prob[i]**pos_word_count[i]) + math.log(posratio)
+        try:
+            hmap = -math.log(pos_word_prob[i]**pos_word_count[i] * (1-pos_word_prob[i])**(1400-pos_word_count[i]))
+        except:
+            hmap = 0
+        print("probability of {} in pos review: {} (log={})".format(vocabulary[i], pos_word_count[i]/sum(pos_word_count), hmap))
         thetaPos[i] = hmap
     thetaPosTrue = thetaPos
     thetaNegTrue = thetaNeg
