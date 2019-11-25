@@ -216,14 +216,14 @@ def naiveBayesMulFeature_sk_MNBC(xtrain, ytrain, xtest, ytest):
     return Accuracy
 
 
-def naiveBayesBernFeature_train(xtrain, ytrain):
+
+def L(p_hat, x, n):
+    p = math.pow(p_hat, x) * math.pow(1 - p_hat, n - x)
+    return p
+
+def naiveBayesBernFeature_train2(xtrain, ytrain):
     thetaPosTrue = []
     thetaNegTrue = []
-    # turn counts into bernoulli "successes"
-    for i in range(len(xtrain)):
-        for j in range(len(xtrain[i])):
-            if(xtrain[i][j] > 0):
-                xtrain[i][j] = 1
     # train
     # get class percentages
     unique, counts = np.unique(ytrain, return_counts=True)
@@ -238,28 +238,43 @@ def naiveBayesBernFeature_train(xtrain, ytrain):
             neg_word_count[:] = neg_word_count[:] + xtrain[i]
         else:
             pos_word_count[:] = pos_word_count[:] + xtrain[i]
+    # turn counts into bernoulli "successes"
+    #for i in range(len(neg_word_count)):
+    #    if(neg_word_count[i] > 0):
+    #        neg_word_count[i] = 1
     # smoothing
     neg_word_prob = np.zeros(len(xtrain[0]))
     pos_word_prob = np.zeros(len(xtrain[0]))
     alpha = .001
+    # get likelihood for data given parameter
     for i in range(len(xtrain[0])):
-        neg_word_prob[i] = (neg_word_count[i] + alpha) / (sum(neg_word_count) + len(vocabulary) + 1)
-        pos_word_prob[i] = (pos_word_count[i] + alpha) / (sum(pos_word_count) + len(vocabulary) + 1)
+        p_hat = neg_word_count[i] / sum(neg_word_count)
+        x = neg_word_count[i]
+        n = 1400
+        #neg_word_prob[i] = L(p_hat, x, n) # neg_word_count[i] + alpha) / (sum(neg_word_count) + len(vocabulary) + 1)
+        p_hat = pos_word_count[i] / sum(pos_word_count)
+        x = pos_word_count[i]
+        #pos_word_prob[i] = L(p_hat, x, n) # (pos_word_count[i] + alpha) / (sum(pos_word_count) + len(vocabulary) + 1)
     # get argmax of probabilities for collection of words in diff classes
     thetaNeg = np.zeros(len(xtrain[0]))
     for i in range(len(xtrain[0])):
+        p_hat = neg_word_count[i] / sum(neg_word_count)
+        x = neg_word_count[i]
+        n = 1400
         hmap = 0 # math.log(neg_word_prob[i]) + math.log(negratio)
         try:
-            hmap = -math.log(neg_word_prob[i]**neg_word_count[i] * (1-neg_word_prob[i])**(1400-neg_word_count[i]))
+            hmap = -x * math.log(p_hat)-(n-x)*math.log(1-p_hat) # -math.log(neg_word_prob[i]**neg_word_count[i] * (1-neg_word_prob[i])**(1400-neg_word_count[i]))
         except:
             hmap = 0
         print("probability of {} in neg review: {} (log={})".format(vocabulary[i], neg_word_count[i]/sum(neg_word_count), hmap))
         thetaNeg[i] = hmap
     thetaPos = np.zeros(len(xtrain[0]))
     for i in range(len(xtrain[0])):
+        p_hat = pos_word_count[i] / sum(pos_word_count)
+        x = pos_word_count[i]
         hmap = 0 # math.log(pos_word_prob[i]**pos_word_count[i]) + math.log(posratio)
         try:
-            hmap = -math.log(pos_word_prob[i]**pos_word_count[i] * (1-pos_word_prob[i])**(1400-pos_word_count[i]))
+            hmap = -x * math.log(p_hat)-(n-x)*math.log(1-p_hat) # -math.log(pos_word_prob[i]**pos_word_count[i] * (1-pos_word_prob[i])**(1400-pos_word_count[i]))
         except:
             hmap = 0
         print("probability of {} in pos review: {} (log={})".format(vocabulary[i], pos_word_count[i]/sum(pos_word_count), hmap))
@@ -269,14 +284,45 @@ def naiveBayesBernFeature_train(xtrain, ytrain):
     return thetaPosTrue, thetaNegTrue
 
 
+def naiveBayesBernFeature_train(xtrain, ytrain):
+    prior_class = 0.5
+    # find avg probability of a word per class using laplace smoothing fxn
+    neg_word_count = np.zeros(len(xtrain[0]))
+    pos_word_count = np.zeros(len(xtrain[0]))
+    # fraction of documents in which words appear
+    for i in range(len(ytrain)):
+        if ytrain[i] == 0:
+            neg_word_count[:] = neg_word_count[:] + xtrain[i]
+        else:
+            pos_word_count[:] = pos_word_count[:] + xtrain[i]
+    # get likelihood (with add-one smoothing)
+    neg_word_prob = np.zeros(len(xtrain[0]))
+    pos_word_prob = np.zeros(len(xtrain[0]))
+    for i in range(len(xtrain[0])):
+        neg_word_prob[i] = (neg_word_count[i]+1) / (sum(neg_word_count)+2)
+        pos_word_prob[i] = (pos_word_count[i]+1) / (sum(pos_word_count)+2)
+    # apply bernoulli
+    score = math.log(prior_class)
+    #for i in range(len(xtrain[0])):
+    thetaPosTrue = pos_word_prob
+    thetaNegTrue = neg_word_prob
+    return thetaPosTrue, thetaNegTrue
+
 def naiveBayesBernFeature_test(xtest, ytest, thetaPosTrue, thetaNegTrue):
     yPredict = []
     Accuracy = 0
     for i in range(len(ytest)):
-        y_hat_pos = sum(xtest[i] * thetaPosTrue)
-        y_hat_neg = sum(xtest[i] * thetaNegTrue)
+        pos_score = 0
+        neg_score = 0
+        for j in range(len(xtest[0])):
+            if(xtest[i][j] > 0):
+                pos_score += math.log(thetaPosTrue[j])
+                neg_score += math.log(thetaNegTrue[j])
+            else:
+                pos_score += math.log(1 - thetaPosTrue[j])
+                neg_score += math.log(1 - thetaNegTrue[j])
         classification = 0
-        if(y_hat_pos > y_hat_neg):
+        if(pos_score > neg_score):
             yPredict.append(1)
             classification = 1
         else:
