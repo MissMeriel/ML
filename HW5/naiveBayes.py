@@ -7,7 +7,12 @@ from sklearn.naive_bayes import MultinomialNB
 from os import listdir
 from os.path import isfile, join
 import re, math
-
+import nltk # use for extra credit
+from nltk.corpus import stopwords
+nltk.download('stopwords')
+from nltk.stem import PorterStemmer
+from nltk.tokenize import sent_tokenize, word_tokenize
+nltk.download('punkt')
 ###############################################################################
 
 stop_words = [
@@ -42,83 +47,6 @@ stop_words = [
 ]
 vocabulary = []
 
-def loadData(path):
-    # get dictionary
-    dictionary = "dictionary.txt"
-    vocabulary = get_vocabulary(dictionary)
-    #print(vocabulary)
-    # get training datasets
-    negtrainpath = path + "training_set/"+"neg/"
-    negtrainfiles = [f for f in listdir(negtrainpath) if isfile(join(negtrainpath, f))]
-    postrainpath = path + "training_set/" + "pos/"
-    postrainfiles = [f for f in listdir(postrainpath) if isfile(join(postrainpath, f))]
-    # get testing datasets
-    negtestpath = path + "test_set/" + "neg/"
-    negtestfiles = [f for f in listdir(negtestpath) if isfile(join(negtestpath, f))]
-    postestpath = path + "test_set/" + "pos/"
-    postestfiles = [f for f in listdir(postestpath) if isfile(join(postestpath, f))]
-    #represent each document in BOW format
-    xtrain = np.zeros((len(negtrainfiles)+len(postrainfiles), len(vocabulary)))
-    ytrain = np.zeros(len(negtrainfiles)+len(postrainfiles))
-    i = 0
-    # process training files
-    for fileDj in negtrainfiles:
-        #print(negtrainpath + fileDj)
-        BOWDj = transfer(negtrainpath + fileDj, vocabulary)
-        #print(BOWDj)
-        xtrain[i,:] = BOWDj
-        ytrain[i] = 0  # zero denotes negative review, 1 denotes positive
-        i += 1
-    for fileDj in postrainfiles:
-        BOWDj = transfer(postrainpath + fileDj, vocabulary)
-        xtrain[i,:] = BOWDj
-        ytrain[i] = 1  # 1 denotes positive
-        i += 1
-    # process test files
-    xtest = np.zeros((len(negtestfiles) + len(postestfiles), len(vocabulary)))
-    ytest = np.zeros(len(negtestfiles) + len(postestfiles))
-    i = 0
-    for fileDj in negtestfiles:
-        BOWDj = transfer(negtestpath + fileDj, vocabulary)
-        xtest[i, :] = BOWDj
-        ytest[i] = 0  # zero denotes negative review
-        i += 1
-    for fileDj in postestfiles:
-        BOWDj = transfer(postestpath + fileDj, vocabulary)
-        xtest[i, :] = BOWDj
-        ytest[i] = 1  # 1 denotes positive
-        i += 1
-    return xtrain, xtest, ytrain, ytest
-
-def get_vocabulary(dictionary):
-    global vocabulary
-    with open(dictionary, 'r') as f:
-        line = f.readline().strip()
-        while line:
-            vocabulary.append(line)
-            line = f.readline().strip()
-    return vocabulary
-
-def transfer(fileDj, vocabulary):
-    BOWDj = np.zeros(len(vocabulary))
-    with open(fileDj, 'r') as f:
-        line = f.readline().replace('.,`!?', " ")
-        line  = re.sub('\W+',' ', line)
-        line = preprocess1(line)
-        line = line.strip().split()
-        while line:
-            #print(line)
-            for word in line:
-                if word in vocabulary:
-                    i = vocabulary.index(word)
-                    BOWDj[i] = BOWDj[i] + 1
-                elif word not in stop_words:
-                    BOWDj[100] = BOWDj[100] + 1
-            line = f.readline()
-            line = re.sub('\W+',' ', line)
-            line = line.strip().split()
-    return BOWDj
-
 def preprocess1(line):
     line = line.replace("loving", "love")
     line = line.replace("loves", "love")
@@ -145,13 +73,152 @@ def preprocess1(line):
     line = line.replace("wildest", "wild")
     line = line.replace("poorer", "poor")
     line = line.replace("poorest", "poor")
-    #line = line.replace("", "")
-    #line = line.replace("", "")
     return line
 
 
 def preprocess2(line):
-    return line
+    # remove stopwords
+    sw = set(stopwords.words('english'))
+    for word in sw:
+        if word in line:
+            line.replace(word, " ")
+    # stemming
+    tokenized = word_tokenize(line)
+    ps = PorterStemmer()
+    for word in line:
+        word = ps.stem(word)
+    return " ".join(line)
+
+
+def loadData(path):
+    # get dictionary
+    dictionary = "dictionary.txt"
+    vocabulary = get_vocabulary(dictionary)
+    # get training datasets
+    negtrainpath = path + "training_set/"+"neg/"
+    negtrainfiles = [f for f in listdir(negtrainpath) if isfile(join(negtrainpath, f))]
+    postrainpath = path + "training_set/" + "pos/"
+    postrainfiles = [f for f in listdir(postrainpath) if isfile(join(postrainpath, f))]
+    # get testing datasets
+    negtestpath = path + "test_set/" + "neg/"
+    negtestfiles = [f for f in listdir(negtestpath) if isfile(join(negtestpath, f))]
+    postestpath = path + "test_set/" + "pos/"
+    postestfiles = [f for f in listdir(postestpath) if isfile(join(postestpath, f))]
+    #represent each document in BOW format
+    xtrain = np.zeros((len(negtrainfiles)+len(postrainfiles), len(vocabulary)))
+    ytrain = np.zeros(len(negtrainfiles)+len(postrainfiles))
+    i = 0
+    # process training files
+    for fileDj in negtrainfiles:
+        BOWDj = transfer(negtrainpath + fileDj, vocabulary)
+        xtrain[i,:] = BOWDj
+        ytrain[i] = 0  # zero denotes negative review, 1 denotes positive
+        i += 1
+    for fileDj in postrainfiles:
+        BOWDj = transfer(postrainpath + fileDj, vocabulary)
+        xtrain[i,:] = BOWDj
+        ytrain[i] = 1  # 1 denotes positive
+        i += 1
+    # process test files
+    xtest = np.zeros((len(negtestfiles) + len(postestfiles), len(vocabulary)))
+    ytest = np.zeros(len(negtestfiles) + len(postestfiles))
+    i = 0
+    for fileDj in negtestfiles:
+        BOWDj = transfer(negtestpath + fileDj, vocabulary)
+        xtest[i, :] = BOWDj
+        ytest[i] = 0  # zero denotes negative review
+        i += 1
+    for fileDj in postestfiles:
+        BOWDj = transfer(postestpath + fileDj, vocabulary)
+        xtest[i, :] = BOWDj
+        ytest[i] = 1  # 1 denotes positive
+        i += 1
+    return xtrain, xtest, ytrain, ytest
+
+
+def get_vocabulary(dictionary):
+    global vocabulary
+    with open(dictionary, 'r') as f:
+        line = f.readline().strip()
+        while line:
+            vocabulary.append(line)
+            line = f.readline().strip()
+    return vocabulary
+
+
+def transfer(fileDj, vocabulary, preprocess=preprocess1):
+    BOWDj = np.zeros(len(vocabulary))
+    boring_count = 0
+    with open(fileDj, 'r') as f:
+        track_boring = True
+        line = f.readline() #.replace('.,`!?', " ")
+        line = preprocess(line)
+        while line:
+            line = re.sub('\W+', ' ', line)
+            line = line.strip().split()
+            for word in line:
+                if word in vocabulary:
+                    i = vocabulary.index(word)
+                    BOWDj[i] = BOWDj[i] + 1
+                else: #if word not in stop_words:
+                    BOWDj[100] = BOWDj[100] + 1
+            line = f.readline()
+    return BOWDj
+
+
+def loadData2(path):
+    global vocabulary
+    # get dictionary
+    dictionary = "dictionary.txt"
+    vocabulary = get_vocabulary(dictionary)
+    # get training datasets
+    negtrainpath = path + "training_set/"+"neg/"
+    negtrainfiles = [f for f in listdir(negtrainpath) if isfile(join(negtrainpath, f))]
+    postrainpath = path + "training_set/" + "pos/"
+    postrainfiles = [f for f in listdir(postrainpath) if isfile(join(postrainpath, f))]
+    # get testing datasets
+    negtestpath = path + "test_set/" + "neg/"
+    negtestfiles = [f for f in listdir(negtestpath) if isfile(join(negtestpath, f))]
+    postestpath = path + "test_set/" + "pos/"
+    postestfiles = [f for f in listdir(postestpath) if isfile(join(postestpath, f))]
+    #represent each document in BOW format
+    xtrain = np.zeros((len(negtrainfiles)+len(postrainfiles), len(vocabulary)))
+    ytrain = np.zeros(len(negtrainfiles)+len(postrainfiles))
+    i = 0
+    # process training files
+    for fileDj in negtrainfiles:
+        BOWDj = transfer(negtrainpath + fileDj, vocabulary, preprocess=preprocess2)
+        xtrain[i,:] = BOWDj
+        ytrain[i] = 0  # zero denotes negative review, 1 denotes positive
+        i += 1
+    for fileDj in postrainfiles:
+        BOWDj = transfer(postrainpath + fileDj, vocabulary, preprocess=preprocess2)
+        xtrain[i,:] = BOWDj
+        ytrain[i] = 1  # 1 denotes positive
+        i += 1
+    # process test files
+    xtest = np.zeros((len(negtestfiles) + len(postestfiles), len(vocabulary)))
+    ytest = np.zeros(len(negtestfiles) + len(postestfiles))
+    i = 0
+    for fileDj in negtestfiles:
+        BOWDj = transfer(negtestpath + fileDj, vocabulary, preprocess=preprocess2)
+        xtest[i, :] = BOWDj
+        ytest[i] = 0  # zero denotes negative review
+        i += 1
+    for fileDj in postestfiles:
+        BOWDj = transfer(postestpath + fileDj, vocabulary, preprocess=preprocess2)
+        xtest[i, :] = BOWDj
+        ytest[i] = 1  # 1 denotes positive
+        i += 1
+    # shorten dictionary to only the highest freq words
+    dict_freq = np.zeros(len(vocabulary))
+    for i in range(len(xtrain)):
+        dict_freq[:] += xtrain[i]
+    for i in range(len(xtest)):
+        dict_freq[:] += xtrain[i]
+    top_idx = np.argsort(dict_freq)[-3:]
+    vocabulary = [vocabulary[i] for i in top_idx]
+    return xtrain, xtest, ytrain, ytest
 
 
 # See lecture 17c slide 54-56
@@ -162,7 +229,7 @@ def naiveBayesMulFeature_train(xtrain, ytrain):
     negratio = counts[0] / float(len(ytrain))
     posratio = counts[1] / float(len(ytrain))
     # find avg probability of a word per class using laplace smoothing fxn
-    alpha = .001
+    alpha = 1
     neg_word_count = np.zeros(len(xtrain[0]))
     pos_word_count = np.zeros(len(xtrain[0]))
     for i in range(len(ytrain)):
@@ -170,24 +237,19 @@ def naiveBayesMulFeature_train(xtrain, ytrain):
             neg_word_count[:] = neg_word_count[:] + xtrain[i]
         else:
             pos_word_count[:] = pos_word_count[:] + xtrain[i]
+    # Laplace smoothing
     neg_word_prob = np.zeros(len(xtrain[0]))
     pos_word_prob = np.zeros(len(xtrain[0]))
     for i in range(len(xtrain[0])):
-        neg_word_prob[i] = (neg_word_count[i] + alpha) / (sum(neg_word_count) + len(vocabulary) + 1)
-        pos_word_prob[i] = (pos_word_count[i] + alpha) / (sum(pos_word_count) + len(vocabulary) + 1)
+        neg_word_prob[i] = (neg_word_count[i] + alpha) / (sum(neg_word_count) + len(vocabulary))
+        pos_word_prob[i] = (pos_word_count[i] + alpha) / (sum(pos_word_count) + len(vocabulary))
     # get argmax of probabilities for collection of words in diff classes
     thetaNeg = np.zeros(len(xtrain[0]))
     for i in range(len(xtrain[0])):
-        #hmap = math.log(neg_word_prob[i]/float(sum(neg_word_count))) + math.log(negratio)
-        hmap = math.log(neg_word_prob[i]) + math.log(negratio)
-        #print("probability of {} in neg review: {}".format(vocabulary[i], hmap))
-        thetaNeg[i] = hmap
+        thetaNeg[i] = math.log(neg_word_prob[i]) + math.log(negratio)
     thetaPos = np.zeros(len(xtrain[0]))
     for i in range(len(xtrain[0])):
-        #hmap = math.log(pos_word_prob[i]/sum(pos_word_count)) + math.log(posratio)
-        hmap = math.log(pos_word_prob[i]) + math.log(posratio)
-        #print("probability of {} in pos review: {}".format(vocabulary[i], hmap))
-        thetaPos[i] = hmap
+        thetaPos[i] = math.log(pos_word_prob[i]) + math.log(posratio)
     return thetaPos, thetaNeg
 
 
@@ -216,79 +278,30 @@ def naiveBayesMulFeature_sk_MNBC(xtrain, ytrain, xtest, ytest):
     return Accuracy
 
 
-
 def L(p_hat, x, n):
     p = math.pow(p_hat, x) * math.pow(1 - p_hat, n - x)
     return p
 
-def naiveBayesBernFeature_train2(xtrain, ytrain):
-    thetaPosTrue = []
-    thetaNegTrue = []
-    # train
-    # get class percentages
-    unique, counts = np.unique(ytrain, return_counts=True)
-    negratio = counts[0] / float(len(ytrain))
-    posratio = counts[1] / float(len(ytrain))
-    # find avg probability of a word per class using laplace smoothing fxn
-    neg_word_count = np.zeros(len(xtrain[0]))
-    pos_word_count = np.zeros(len(xtrain[0]))
-    # fraction of documents in which words appear
-    for i in range(len(ytrain)):
-        if ytrain[i] == 0:
-            neg_word_count[:] = neg_word_count[:] + xtrain[i]
-        else:
-            pos_word_count[:] = pos_word_count[:] + xtrain[i]
-    # turn counts into bernoulli "successes"
-    #for i in range(len(neg_word_count)):
-    #    if(neg_word_count[i] > 0):
-    #        neg_word_count[i] = 1
-    # smoothing
-    neg_word_prob = np.zeros(len(xtrain[0]))
-    pos_word_prob = np.zeros(len(xtrain[0]))
-    alpha = .001
-    # get likelihood for data given parameter
-    for i in range(len(xtrain[0])):
-        p_hat = neg_word_count[i] / sum(neg_word_count)
-        x = neg_word_count[i]
-        n = 1400
-        #neg_word_prob[i] = L(p_hat, x, n) # neg_word_count[i] + alpha) / (sum(neg_word_count) + len(vocabulary) + 1)
-        p_hat = pos_word_count[i] / sum(pos_word_count)
-        x = pos_word_count[i]
-        #pos_word_prob[i] = L(p_hat, x, n) # (pos_word_count[i] + alpha) / (sum(pos_word_count) + len(vocabulary) + 1)
-    # get argmax of probabilities for collection of words in diff classes
-    thetaNeg = np.zeros(len(xtrain[0]))
-    for i in range(len(xtrain[0])):
-        p_hat = neg_word_count[i] / sum(neg_word_count)
-        x = neg_word_count[i]
-        n = 1400
-        hmap = 0 # math.log(neg_word_prob[i]) + math.log(negratio)
-        try:
-            hmap = -x * math.log(p_hat)-(n-x)*math.log(1-p_hat) # -math.log(neg_word_prob[i]**neg_word_count[i] * (1-neg_word_prob[i])**(1400-neg_word_count[i]))
-        except:
-            hmap = 0
-        print("probability of {} in neg review: {} (log={})".format(vocabulary[i], neg_word_count[i]/sum(neg_word_count), hmap))
-        thetaNeg[i] = hmap
-    thetaPos = np.zeros(len(xtrain[0]))
-    for i in range(len(xtrain[0])):
-        p_hat = pos_word_count[i] / sum(pos_word_count)
-        x = pos_word_count[i]
-        hmap = 0 # math.log(pos_word_prob[i]**pos_word_count[i]) + math.log(posratio)
-        try:
-            hmap = -x * math.log(p_hat)-(n-x)*math.log(1-p_hat) # -math.log(pos_word_prob[i]**pos_word_count[i] * (1-pos_word_prob[i])**(1400-pos_word_count[i]))
-        except:
-            hmap = 0
-        print("probability of {} in pos review: {} (log={})".format(vocabulary[i], pos_word_count[i]/sum(pos_word_count), hmap))
-        thetaPos[i] = hmap
-    thetaPosTrue = thetaPos
-    thetaNegTrue = thetaNeg
-    return thetaPosTrue, thetaNegTrue
+
+# turn counts into bernoulli "successes"
+def bernoullize(xtrain):
+    for i in range(len(xtrain)):
+        for j in range(len(xtrain[0])):
+            if(xtrain[i][j] > 0):
+                xtrain[i][j] = 1
+    return xtrain
 
 
 def naiveBayesBernFeature_train(xtrain, ytrain):
-    prior_class = 0.5
+    # get class percentages
+    unique, counts = np.unique(ytrain, return_counts=True)
+    neg_classes = counts[0]
+    pos_classes = counts[1]
     # find avg probability of a word per class using laplace smoothing fxn
     neg_word_count = np.zeros(len(xtrain[0]))
     pos_word_count = np.zeros(len(xtrain[0]))
+    # bernoulli-ize counts
+    xtrain = bernoullize(xtrain)
     # fraction of documents in which words appear
     for i in range(len(ytrain)):
         if ytrain[i] == 0:
@@ -296,21 +309,18 @@ def naiveBayesBernFeature_train(xtrain, ytrain):
         else:
             pos_word_count[:] = pos_word_count[:] + xtrain[i]
     # get likelihood (with add-one smoothing)
-    neg_word_prob = np.zeros(len(xtrain[0]))
-    pos_word_prob = np.zeros(len(xtrain[0]))
+    thetaNegTrue = np.zeros(len(xtrain[0]))
+    thetaPosTrue = np.zeros(len(xtrain[0]))
     for i in range(len(xtrain[0])):
-        neg_word_prob[i] = (neg_word_count[i]+1) / (sum(neg_word_count)+2)
-        pos_word_prob[i] = (pos_word_count[i]+1) / (sum(pos_word_count)+2)
-    # apply bernoulli
-    score = math.log(prior_class)
-    #for i in range(len(xtrain[0])):
-    thetaPosTrue = pos_word_prob
-    thetaNegTrue = neg_word_prob
+        thetaNegTrue[i] = (neg_word_count[i]+1) / (neg_classes+2)
+        thetaPosTrue[i] = (pos_word_count[i]+1) / (pos_classes+2)
     return thetaPosTrue, thetaNegTrue
+
 
 def naiveBayesBernFeature_test(xtest, ytest, thetaPosTrue, thetaNegTrue):
     yPredict = []
     Accuracy = 0
+    xtest = bernoullize(xtest)
     for i in range(len(ytest)):
         pos_score = 0
         neg_score = 0
@@ -344,6 +354,7 @@ if __name__ == "__main__":
 
 
     xtrain, xtest, ytrain, ytest = loadData(textDataSetsDirectoryFullPath)
+    #xtrain, xtest, ytrain, ytest = loadData2(textDataSetsDirectoryFullPath)
 
 
     thetaPos, thetaNeg = naiveBayesMulFeature_train(xtrain, ytrain)
